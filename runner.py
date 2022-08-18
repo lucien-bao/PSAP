@@ -228,6 +228,27 @@ def start_play_phase():
         if BTNS_ENABLED[i]:
             buttons[i].autoDraw = True
 
+def add_press():
+    global presses
+    presses += 1
+    press_counter.text = str(presses)
+
+def check_trigger():
+    global state, presses, points
+    if state == STATE_A and presses == TRIGGER_AMTS[0]:
+        presses = 0
+        press_counter.text = str(presses)
+        points += 1
+        points_counter.text = str(points)
+        # TODO: make points counter bigger
+        state = STATE_CHOOSE
+    elif state == STATE_B and presses == TRIGGER_AMTS[1]\
+      or state == STATE_C and presses == TRIGGER_AMTS[2]:
+        presses = 0
+        press_counter.text = str(presses)
+        # TODO: protection interval
+        state = STATE_CHOOSE
+    
 
 def handle_keys(keys):
     global phase, state
@@ -249,15 +270,24 @@ def handle_keys(keys):
             refresh_text()
     elif phase == PHASE_PLAY:
         if state == STATE_CHOOSE:
+            # TODO: make letter bigger, others disappear
+            # TODO: make enabling/disabling buttons work
             if "a" in keys:
                 state = STATE_A
-                presses += 1
+                add_press()
             elif "b" in keys:
+                print("b")
                 state = STATE_B
-                presses += 1
+                add_press()
             elif "c" in keys:
                 state = STATE_C
-                presses += 1                
+                add_press()
+        elif state == STATE_A and "a" in keys\
+          or state == STATE_B and "b" in keys\
+          or state == STATE_C and "c" in keys:
+            add_press()
+            check_trigger()
+
 
 
 refresh_text()
