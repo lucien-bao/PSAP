@@ -1,0 +1,58 @@
+Introduction
+---
+Today you will be earning money by working at the computer. You will be participating with other players in this study.
+
+The other players will have a similar computer setup and are located at a different facility.
+---
+===
+Computer Setup
+---
+When each session starts, the letters "A", "B", "C", a point counter (top) and a press counter (bottom) appear on the screen.
+
+The point counter will be at 0.
+---
+===
+Instructions: key A
+---
+Pushing key "A" (on your keyboard) will erase the letters "B" and "C" from the screen and turn the letter "A" blue.
+
+The press counter (bottom) will start counting how often you press key "A".
+---
+Pushing key "A" 100 times will erase the letter "A" from the screen and 1 point(s) will be added to your point counter. The point counter will turn green and enlarges for about 1 s.
+
+Each point is worth $0.10.
+
+After about 1 s the letters "A", "B", "C" will reappear on the computer screen. At that point you can continue to press the key for "A" or switch to the keys for "B" or "C".
+===
+Instructions: continued
+---
+During the session, the point counter may turn red, become larger, and 1 point(s) will be subtracted from your point counter.
+---
+After 1 point(s) is/are subtracted, the counter will return to its normal size.
+
+This means that your co-player has subtracted 1 point(s) from your counter by pressing "B". Every point that the other player subtracts from your counter is added to their counter.
+===
+Instructions: key B
+---
+If you push key "B" (on your keyboard) the letters "A" and "C" will be erased from the screen and the letter "B" will turn blue.
+
+After you pushed key "B" 10 times, the letter "B" will be erased from the screen and 1 point(s) will be subtracted from the other player's counter.
+
+After about 1 s, the letters "A", "B", and "C" will re-appear on the computer screen. You can continue to press the key for "B" or switch to the keys for "A" or "C".
+
+If you subtract points from the other player, they will NOT be added to your counter. Remember, points that are subtracted from your counter by the other player are added to that player's counter.
+---
+===
+Instructions: key C
+---
+If you push key "C" (on your keyboard), the letters "A" and "B" will be erased from the screen and the letter "C" will turn blue.
+
+After you push the "C" key 10 times, the letter "C" will be erased from the screen and your point counter will be protected from point subtractions initiated by the other player for some period of time.
+
+After about 1 s, the letters "A", "B", and "C" will reappear on the computer screen. You can continue to press the key for "C" or switch to the keys for "A" or "B".
+---
+===
+Instructions: Start of Test
+---
+If you are ready, press the SPACE BAR to start.
+---
