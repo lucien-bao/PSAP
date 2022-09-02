@@ -3,9 +3,12 @@
 from psychopy import event, core
 from psychopy.visual import Window, TextBox2
 from psychopy.visual.rect import Rect
-from psychopy.event import Mouse
 from psychopy.core import Clock
 from psychopy.clock import CountdownTimer
+from random import randint
+
+# TODO: Please incorporate a switch/if that detects when there have been a certain number of rounds without the participant stealing to trigger an "action" from the computer and steal points. We can set this number to 5 for now as a constant. Please do something similar for checking the number of rounds without protecting their points.
+# TODO: Implement a prompt to insert participant id, condition and other information that carries around for the filename and inside the dataset that is saved based on the choices. 
 
 # CONSTANTS #
 # window size
@@ -20,7 +23,7 @@ TRIGGER_AMTS = (100, 10, 10)
 # duration of protection when triggered (in seconds)
 PROTECT_DURATION = 250
 # lower, upper bounds for provocation delay (in seconds)
-PROVOKE_RANGE = (6, 120)
+PROVOKE_RANGE = (10, 10)
 # toggles the A, B, C buttons
 BTNS_ENABLED = (True, True, True)
 
@@ -97,10 +100,11 @@ phase = PHASE_INTRO
 state = STATE_INTRO
 
 exp_clock = Clock()
-protect_clock = Clock()
-provoke_clock = Clock()
-points_timer = CountdownTimer(0) # track time to size & color reset
-block_timer = CountdownTimer(0) # track time to allow buttons again
+protect_timer = CountdownTimer(0)
+provoke_timer = CountdownTimer(0)
+provoke_active = False
+points_timer = CountdownTimer(0)  # track time to size & color reset
+block_timer = CountdownTimer(0)  # track time to allow buttons again
 blocked = False
 # track if point has been taken since the beginning or
 # the last protection interval
@@ -190,20 +194,25 @@ points_counter = TextBox2(win=window, pos=POINTS_COUNTER_POS,
                           alignment="center", autoDraw=False, color=BLACK,
                           **TEXT_ARGS)
 
-points_counter_big = TextBox2(win=window, pos=POINTS_COUNTER_POS,
-                          text="0", letterHeight=COUNTER_FONTSIZE_BIG,
-                          alignment="center", autoDraw=False, color=GREEN,
-                          **TEXT_ARGS)
+points_counter_green = TextBox2(win=window, pos=POINTS_COUNTER_POS,
+                                text="0", letterHeight=COUNTER_FONTSIZE_BIG,
+                                alignment="center", autoDraw=False, color=GREEN,
+                                **TEXT_ARGS)
+
+points_counter_red = TextBox2(win=window, pos=POINTS_COUNTER_POS,
+                              text="0", letterHeight=COUNTER_FONTSIZE_BIG,
+                              alignment="center", autoDraw=False, color=RED,
+                              **TEXT_ARGS)
 
 points = 0
 buttons = [TextBox2(win=window, pos=BUTTON_POS[i], text=chr(ord('A')+i),
                     letterHeight=BUTTON_FONTSIZE, alignment="center",
                     autoDraw=False, color=BLACK, **TEXT_ARGS)
-                    for i in range(3)]
+           for i in range(3)]
 buttons_big = [TextBox2(win=window, pos=BUTTON_POS[i], text=chr(ord('A')+i),
-                    letterHeight=BUTTON_FONTSIZE_BIG, alignment="center",
-                    autoDraw=False, color=BLUE, **TEXT_ARGS)
-                    for i in range(3)]
+                        letterHeight=BUTTON_FONTSIZE_BIG, alignment="center",
+                        autoDraw=False, color=BLUE, **TEXT_ARGS)
+               for i in range(3)]
 press_text = TextBox2(win=window, pos=PRESS_LABEL_POS,
                       text="Button presses:", letterHeight=LABEL_FONTSIZE,
                       alignment="center", autoDraw=False, color=BLACK,
@@ -213,7 +222,17 @@ press_counter = TextBox2(win=window, pos=PRESS_COUNTER_POS,
                          alignment="center", autoDraw=False, color=BLACK,
                          **TEXT_ARGS)
 presses = 0
-play_stims = [points_text, points_counter, press_text, press_counter]
+play_stims_start = [points_text, points_counter, press_text, press_counter]
+play_stims_all = [s for s in play_stims_start] + [points_counter_green,
+                                                  points_counter_red] + [b for b in buttons] + [b for b in buttons_big]
+
+# end stim
+end_text = TextBox2(win=window, pos=(0, 0), bold=True,
+                    text="You are now done with the experiment."
+                    " Press [esc] to exit.",
+                    letterHeight=CONNECT_FONTSIZE,
+                    alignment="center", autoDraw=False,
+                    color=BLACK, **TEXT_ARGS)
 
 
 def refresh_text():
@@ -239,17 +258,26 @@ def start_connect_phase():
     connect_start_time = core.monotonicClock.getTime()
 
 
+def start_provocation():
+    global provoke_timer, provoke_active
+    delay = randint(PROVOKE_RANGE[0], PROVOKE_RANGE[1])
+    provoke_timer = CountdownTimer(delay)
+    provoke_active = True
+
+
 def start_play_phase():
     global phase, state
     phase = PHASE_PLAY
     state = STATE_CHOOSE
     for stim in connect_stims:
         stim.autoDraw = False
-    for stim in play_stims:
+    for stim in play_stims_start:
         stim.autoDraw = True
     for i in range(len(buttons)):
         if BTNS_ENABLED[i]:
             buttons[i].autoDraw = True
+
+    start_provocation()
 
 
 def add_press():
@@ -259,20 +287,22 @@ def add_press():
 
 
 def check_trigger():
-    global state, presses, points, points_timer, block_timer, blocked
+    global state, presses, points, points_timer, block_timer, blocked,\
+        protect_timer, provoked
     if state == STATE_A and presses == TRIGGER_AMTS[0]:
         presses = 0
         press_counter.text = str(presses)
         points += 1
         points_counter.text = str(points)
         points_counter.autoDraw = False
-        points_counter_big.text = str(points)
-        points_counter_big.autoDraw = True
+        points_counter_green.text = str(points)
+        points_counter_green.autoDraw = True
+        points_counter_red.autoDraw = False
         points_timer = CountdownTimer(1)
 
         for button in buttons_big:
             button.autoDraw = False
-        
+
         block_timer = CountdownTimer(1)
         blocked = True
         state = STATE_CHOOSE
@@ -283,8 +313,12 @@ def check_trigger():
 
         for button in buttons_big:
             button.autoDraw = False
+
+        if provoked:
+            protect_timer = CountdownTimer(PROTECT_DURATION)
+            provoked = False
+
         blocked = True
-        # TODO: protection interval
         block_timer = CountdownTimer(1)
         state = STATE_CHOOSE
 
@@ -339,13 +373,30 @@ refresh_text()
 
 # MAINLOOP #
 while True:
-    if phase == PHASE_PLAY and points_timer.getTime() < 0.0001:
+    if phase == PHASE_PLAY and core.monotonicClock.getTime() > DURATION:
+        phase = PHASE_END
+        for stim in play_stims_all:
+            stim.autoDraw = False
+        end_text.autoDraw = True
+
+    if phase == PHASE_PLAY and points_timer.getTime() < 0:
         points_counter.autoDraw = True
-        points_counter_big.autoDraw = False
-    if blocked and block_timer.getTime() < 0.0001:
+        points_counter_green.autoDraw = False
+        points_counter_red.autoDraw = False
+    if phase == PHASE_PLAY and blocked and block_timer.getTime() < 0:
         for button in buttons:
             button.autoDraw = True
         blocked = False
+    if phase == PHASE_PLAY and provoke_active and provoke_timer.getTime() < 0:
+        if protect_timer.getTime() < 0:
+            points_counter.autoDraw = False
+            points -= 1
+            points_counter.text = str(points)
+            points_counter_red.text = str(points)
+            points_counter_red.autoDraw = True
+            points_timer = CountdownTimer(1)
+            provoked = True
+        start_provocation()
 
     keys = event.getKeys()
     if "escape" in keys:
