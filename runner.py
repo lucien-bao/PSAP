@@ -2,13 +2,15 @@
 
 from psychopy import event, core
 from psychopy.visual import Window, TextBox2
+from psychopy.visual import ImageStim
 from psychopy.visual.rect import Rect
 from psychopy.core import Clock
 from psychopy.clock import CountdownTimer
 from random import randint
+import datetime
 
 # TODO: Please incorporate a switch/if that detects when there have been a certain number of rounds without the participant stealing to trigger an "action" from the computer and steal points. We can set this number to 5 for now as a constant. Please do something similar for checking the number of rounds without protecting their points.
-# TODO: Implement a prompt to insert participant id, condition and other information that carries around for the filename and inside the dataset that is saved based on the choices. 
+# TODO: Implement a prompt to insert participant id, condition and other information that carries around for the filename and inside the dataset that is saved based on the choices.
 
 # CONSTANTS #
 # window size
@@ -16,7 +18,6 @@ WIDTH = 1920
 HEIGHT = 1080
 
 # length of experiment (in seconds)
-# TODO: implement stopping
 DURATION = 25 * 60
 # number of times key must be pressed to trigger effect
 TRIGGER_AMTS = (100, 10, 10)
@@ -95,6 +96,9 @@ COUNTER_FONTSIZE_BIG = 80
 BUTTON_FONTSIZE = 200
 BUTTON_FONTSIZE_BIG = 300
 
+IMG_POS = (-400, 100)
+IMG_SIZE = (500, 300)
+
 # GLOBALS #
 phase = PHASE_INTRO
 state = STATE_INTRO
@@ -110,14 +114,16 @@ blocked = False
 # the last protection interval
 provoked = False
 
-# TODO: file stuff
 script_file = open("script.txt", "r")
 script = tuple(script_file.read().split("==="))  # split into sections
 script = [string.split("---") for string in script]
 
 fullwidth = [True, False, False, False, True, True, True]
 
-output = open("data.csv", "w")
+
+participant_id = input("Please enter your participant ID: ")
+date_time = datetime.datetime.now()
+output = open(str(participant_id) + "-" + str(date_time) + ".csv", "w")
 output.write("")
 
 # window stuff
@@ -161,6 +167,11 @@ fwd_text = TextBox2(win=window, pos=FWD_POS,
                     letterHeight=BTN_FONTSIZE, color=BLACK,
                     alignment="center", autoDraw=True,
                     **TEXT_ARGS)
+
+# images
+img_stim = ImageStim(window, image="setup.png", pos=IMG_POS,
+    size=IMG_SIZE, anchor="CENTER")
+
 intro_stims = [
     header_box,
     desc_text1,
@@ -170,7 +181,8 @@ intro_stims = [
     fwd_text,
     fwd_box,
     back_text,
-    back_box
+    back_box,
+    img_stim
 ]
 
 # connect stim
@@ -341,6 +353,18 @@ def handle_keys(keys):
             # go forward by 1 screen
             state += 1
             refresh_text()
+
+        if state == STATE_SETUP:
+            img_stim.image = "setup.png"
+            img_stim.autoDraw = True
+        elif state == STATE_INSTA:
+            img_stim.image = "instr_a.png"
+            img_stim.autoDraw = True
+        elif state == STATE_INSTN:
+            img_stim.image = "instr_minus.png"
+            img_stim.autoDraw = True
+        else:
+            img_stim.autoDraw = False
     elif phase == PHASE_PLAY:
         if state == STATE_CHOOSE and not blocked:
             if "a" in keys and BTNS_ENABLED[0]:
@@ -371,6 +395,10 @@ def handle_keys(keys):
 
 refresh_text()
 
+def stop():
+    output.close()
+    core.quit()
+
 # MAINLOOP #
 while True:
     if phase == PHASE_PLAY and core.monotonicClock.getTime() > DURATION:
@@ -399,9 +427,8 @@ while True:
         start_provocation()
 
     keys = event.getKeys()
-    if "escape" in keys:
-        output.close()
-        core.quit()
+    if "escape" in keys or core.monotonicClock.getTime() > DURATION:
+        stop()
     if phase == PHASE_INTRO:
         handle_keys(keys)
     elif phase == PHASE_CONNECT:
