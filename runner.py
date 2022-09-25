@@ -10,7 +10,6 @@ from random import randint
 import datetime
 
 # TODO: Please incorporate a switch/if that detects when there have been a certain number of rounds without the participant stealing to trigger an "action" from the computer and steal points. We can set this number to 5 for now as a constant. Please do something similar for checking the number of rounds without protecting their points.
-# TODO: Implement a prompt to insert participant id, condition and other information that carries around for the filename and inside the dataset that is saved based on the choices.
 
 # CONSTANTS #
 # window size
@@ -18,13 +17,13 @@ WIDTH = 1920
 HEIGHT = 1080
 
 # length of experiment (in seconds)
-DURATION = 25 * 60
+DURATION = 60 * 2  # 25 minutes
 # number of times key must be pressed to trigger effect
 TRIGGER_AMTS = (100, 10, 10)
 # duration of protection when triggered (in seconds)
 PROTECT_DURATION = 250
 # lower, upper bounds for provocation delay (in seconds)
-PROVOKE_RANGE = (10, 10)
+PROVOKE_RANGE = (6, 120)
 # toggles the A, B, C buttons
 BTNS_ENABLED = (True, True, True)
 
@@ -120,11 +119,16 @@ script = [string.split("---") for string in script]
 
 fullwidth = [True, False, False, False, True, True, True]
 
-
 participant_id = input("Please enter your participant ID: ")
 date_time = datetime.datetime.now()
-output = open(str(participant_id) + "-" + str(date_time) + ".csv", "w")
-output.write("")
+output = open(str(participant_id) + " " + str(date_time) + ".csv", "w")
+output.write("time,a_presses,b_presses,c_presses,earned,deducted,total\n")
+a_presses = 0
+b_presses = 0
+c_presses = 0
+earned = 0
+deducted = 0
+points = 0
 
 # window stuff
 window = Window((WIDTH, HEIGHT), color=WHITE, fullscr=True, units="pix")
@@ -170,7 +174,7 @@ fwd_text = TextBox2(win=window, pos=FWD_POS,
 
 # images
 img_stim = ImageStim(window, image="setup.png", pos=IMG_POS,
-    size=IMG_SIZE, anchor="CENTER")
+                     size=IMG_SIZE, anchor="CENTER")
 
 intro_stims = [
     header_box,
@@ -216,7 +220,6 @@ points_counter_red = TextBox2(win=window, pos=POINTS_COUNTER_POS,
                               alignment="center", autoDraw=False, color=RED,
                               **TEXT_ARGS)
 
-points = 0
 buttons = [TextBox2(win=window, pos=BUTTON_POS[i], text=chr(ord('A')+i),
                     letterHeight=BUTTON_FONTSIZE, alignment="center",
                     autoDraw=False, color=BLACK, **TEXT_ARGS)
@@ -245,6 +248,18 @@ end_text = TextBox2(win=window, pos=(0, 0), bold=True,
                     letterHeight=CONNECT_FONTSIZE,
                     alignment="center", autoDraw=False,
                     color=BLACK, **TEXT_ARGS)
+
+
+def update_log():
+    output.write(",".join([
+        str(core.monotonicClock.getTime()),
+        str(a_presses),
+        str(b_presses),
+        str(c_presses),
+        str(earned),
+        str(deducted),
+        str(points)
+    ])+"\n")
 
 
 def refresh_text():
@@ -300,11 +315,13 @@ def add_press():
 
 def check_trigger():
     global state, presses, points, points_timer, block_timer, blocked,\
-        protect_timer, provoked
+        protect_timer, provoked, earned
     if state == STATE_A and presses == TRIGGER_AMTS[0]:
         presses = 0
         press_counter.text = str(presses)
         points += 1
+        earned += 1
+        update_log()
         points_counter.text = str(points)
         points_counter.autoDraw = False
         points_counter_green.text = str(points)
@@ -336,7 +353,7 @@ def check_trigger():
 
 
 def handle_keys(keys):
-    global phase, state
+    global phase, state, a_presses, b_presses, c_presses
     if phase == PHASE_INTRO:
         if "backspace" in keys:
             # don't do anything if at the very first screen
@@ -373,6 +390,7 @@ def handle_keys(keys):
                     button.autoDraw = False
                 buttons_big[0].autoDraw = True
                 add_press()
+                a_presses += 1
             elif "b" in keys and BTNS_ENABLED[1]:
                 print("b")
                 state = STATE_B
@@ -380,24 +398,34 @@ def handle_keys(keys):
                     button.autoDraw = False
                 buttons_big[1].autoDraw = True
                 add_press()
+                b_presses += 1
             elif "c" in keys and BTNS_ENABLED[2]:
                 state = STATE_C
                 for button in buttons:
                     button.autoDraw = False
                 buttons_big[2].autoDraw = True
                 add_press()
-        elif state == STATE_A and "a" in keys\
-                or state == STATE_B and "b" in keys\
-                or state == STATE_C and "c" in keys:
+                c_presses += 1
+        elif state == STATE_A and "a" in keys:
             add_press()
+            a_presses += 1
+            check_trigger()
+        elif state == STATE_B and "b" in keys:
+            add_press()
+            b_presses += 1
+            check_trigger()
+        elif state == STATE_C and "c" in keys:
+            add_press()
+            c_presses += 1
             check_trigger()
 
-
-refresh_text()
 
 def stop():
     output.close()
     core.quit()
+
+
+refresh_text()
 
 # MAINLOOP #
 while True:
@@ -419,6 +447,8 @@ while True:
         if protect_timer.getTime() < 0:
             points_counter.autoDraw = False
             points -= 1
+            deducted += 1
+            update_log()
             points_counter.text = str(points)
             points_counter_red.text = str(points)
             points_counter_red.autoDraw = True
