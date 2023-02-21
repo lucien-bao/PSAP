@@ -8,6 +8,7 @@ from psychopy.core import Clock
 from psychopy.clock import CountdownTimer
 from random import randint
 import datetime
+import os
 
 # CONSTANTS #
 # window size
@@ -101,13 +102,13 @@ IMG_POS = (-400, 100)
 IMG_SIZE = (500, 300)
 
 
-def main(file_path: None):
+def main(file_path: str=None):
     global phase, state, protect_timer, provoke_timer, provoke_active,\
         points_timer, block_timer, blocked, provoked, rounds_since_steal,\
         rounds_since_shield, script_file, script, fullwidth, participant_id,\
         date_time, output, a_presses, b_presses, c_presses, earned, deducted,\
         points, window, header_box, header_text, desc_text1, desc_text2,\
-        desc_text3, back_box, bacK_text, fwd_box, fwd_text, img_stim,\
+        desc_text3, back_box, back_text, fwd_box, fwd_text, img_stim,\
         intro_stims, connect_box, connect_text, connect_stims,\
         connect_start_time, points_text, points_counter, points_counter_green,\
         points_counter_red, buttons, buttons_big, press_text, press_counter,\
@@ -137,8 +138,10 @@ def main(file_path: None):
     if file_path is None:
         participant_id = input("Please enter your participant ID: ")
         date_time = datetime.datetime.now()
-        output = open("data/" + str(participant_id) +
-                      " " + str(date_time) + ".csv", "w")
+        date_time_str = f"{date_time.day}-{date_time.month}-" +\
+        f"{date_time.year} {date_time.hour}h{date_time.minute}m{date_time.second}s"
+        output = open("data" + os.sep + str(participant_id) +
+                      " " + date_time_str + ".csv", "w")
     else:
         output = open(file_path, "w")
     output.write("time,a_presses,b_presses,c_presses,earned,deducted,total\n")
@@ -218,7 +221,7 @@ def main(file_path: None):
                             alignment="center", autoDraw=False,
                             color=BLACK, **TEXT_ARGS)
     connect_stims = [connect_box, connect_text]
-    connect_start_time: float
+    connect_start_time = None
 
     # play stims
     points_text = TextBox2(win=window, pos=POINTS_LABEL_POS,
